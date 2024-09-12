@@ -1,6 +1,5 @@
 use physical_constants::NEWTONIAN_CONSTANT_OF_GRAVITATION as G;
 
-
 #[derive(Copy, Clone)]
 pub struct Particle{
     pub mass: f64,
@@ -9,6 +8,14 @@ pub struct Particle{
     pub velocity: BidimensionalVector,
     pub position: BidimensionalVector,
     pub fixed: bool
+}
+
+/*Bidimensional vector struct */
+#[derive(Copy, Clone)]
+pub struct BidimensionalVector{
+    x: f64,
+    y: f64,
+    module: f64
 }
 
 impl Particle {
@@ -31,37 +38,42 @@ impl Particle {
     }
 
     pub fn print_particle_info(&mut self){
-        print!("Position: ");
-        self.position.print_vector();
-        print!("\t\tVelocity: ");
-        self.velocity.print_vector();
-        
+        print!("Position: {}", self.position.get_module());
+        print!("\t\tVelocity: {}", self.velocity.get_module());
+        print!("\t\tForce: {}", self.force.get_module());
         println!("")
     }
 
     pub fn get_distance(&mut self, second_particle: Particle) -> f64{
         let distance_vector: BidimensionalVector = self.position.distance_vector(second_particle.position);
-        let distance: f64 = distance_vector.module;
+        let distance: f64 = distance_vector.get_module();
         return distance;
     }
 
     pub fn calc_gravity_force(&mut self, second_particle: Particle) -> BidimensionalVector{
-        let distance_vector: BidimensionalVector = second_particle.position.distance_vector(self.position);
-        let distance: f64 = distance_vector.module;
+        let distance_vector: BidimensionalVector = self.position.distance_vector(second_particle.position);
+        let distance: f64 = distance_vector.get_module();
         let mut unitary_vector: BidimensionalVector = distance_vector.unitary_vector();
         let force: f64 = (G*self.mass*second_particle.mass)/(distance.powf(2.0));
         //println!("{}", distance);
         return unitary_vector.multiply_vector_by_f64(force);
     }
 
-}
-
-/*Bidimensional vector struct */
-#[derive(Copy, Clone)]
-pub struct BidimensionalVector{
-    x: f64,
-    y: f64,
-    module: f64
+    pub fn calc_gravity_field_force(&mut self, particles: Vec<Particle>){
+        if !(self.fixed){
+            let mut total_force: BidimensionalVector = BidimensionalVector::new(0.0, 0.0);
+            //Iterates in a array of particles
+            for mut affecting_particle in particles{
+                //Calculates the force acting uppon the particle
+                let particle_force = self.calc_gravity_force(affecting_particle);
+                //Adds the force to the total force summing it as a vector
+                total_force = total_force.add_vector(particle_force);
+            }
+            self.force = total_force;       //Sets the acting force on the particle
+        }else{
+            self.force = BidimensionalVector::new(0.0, 0.0);    //Sets to zero the acting force
+        }
+    }
 }
 
 
